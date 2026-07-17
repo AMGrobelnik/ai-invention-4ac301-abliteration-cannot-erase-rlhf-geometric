@@ -1,0 +1,214 @@
+\begin{thebibliography}{23}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Arditi et~al.(2024)Arditi, Obeso, Syed, Paleka, Rimsky, Gurnee, and
+  Nanda]{Arditi2024}
+Andy Arditi, Oscar Obeso, Aaquib Syed, Daniel Paleka, Nina Rimsky, Wes Gurnee,
+  and Neel Nanda.
+\newblock Refusal in language models is mediated by a single direction.
+\newblock In \emph{Advances in Neural Information Processing Systems}, 2024.
+\newblock \doi{10.48550/arXiv.2406.11717}.
+
+\bibitem[Bricken et~al.(2023)Bricken, Templeton, Batson, Chen, Jermyn, Conerly,
+  Turner, Anil, Denison, Askell, Lasenby, Wu, Kravec, Schiefer, Maxwell,
+  Joseph, Hatfield-Dodds, Tamkin, Nguyen, McLean, Burke, Hume, Carter,
+  Henighan, and Olah]{Bricken2023}
+Trenton Bricken, Adly Templeton, Joshua Batson, Brian Chen, Adam Jermyn, Tom
+  Conerly, Nick Turner, Cem Anil, Carson Denison, Amanda Askell, Robert
+  Lasenby, Yifan Wu, Shauna Kravec, Nicholas Schiefer, Tim Maxwell, Nicholas
+  Joseph, Zac Hatfield-Dodds, Alex Tamkin, Karina Nguyen, Brayden McLean,
+  Josiah~E. Burke, Tristan Hume, Shan Carter, Tom Henighan, and Chris Olah.
+\newblock Towards monosemanticity: Decomposing language models with dictionary
+  learning.
+\newblock \emph{Transformer Circuits Thread}, 2023.
+\newblock URL
+  \url{https://transformer-circuits.pub/2023/monosemantic-features}.
+\newblock Anthropic.
+
+\bibitem[Chao et~al.(2024)Chao, Debenedetti, Robey, Andriushchenko, Croce,
+  Sehwag, Dobriban, Flammarion, Pappas, Tram{\`e}r, Hassani, and
+  Wong]{Chao2024}
+Patrick Chao, Edoardo Debenedetti, Alexander Robey, Maksym Andriushchenko,
+  Francesco Croce, Vikash Sehwag, Edgar Dobriban, Nicolas Flammarion, George
+  Pappas, Florian Tram{\`e}r, Hamed Hassani, and Eric Wong.
+\newblock {JailbreakBench}: An open robustness benchmark for jailbreaking large
+  language models.
+\newblock In \emph{Advances in Neural Information Processing Systems}, 2024.
+\newblock \doi{10.48550/arXiv.2404.01318}.
+
+\bibitem[Chopra(2026)]{Chopra2026}
+Ruhaan Chopra.
+\newblock A mechanistic investigation of supervised fine tuning.
+\newblock \emph{arXiv preprint arXiv:2605.11426}, 2026.
+\newblock \doi{10.48550/arXiv.2605.11426}.
+
+\bibitem[Conover et~al.(2023)Conover, Hayes, Mathur, Xie, Wan, Shah, Ghodsi,
+  Wendell, Zaharia, and Xin]{Conover2023}
+Mike Conover, Matt Hayes, Ankit Mathur, Jianwei Xie, Jun Wan, Sam Shah, Ali
+  Ghodsi, Patrick Wendell, Matei Zaharia, and Reynold Xin.
+\newblock Free {Dolly}: Introducing the world's first truly open
+  instruction-tuned {LLM}.
+\newblock Databricks Blog, 2023.
+\newblock URL \url{https://www.databricks.com/blog/2023/04/12/dolly.html}.
+
+\bibitem[Cristofano(2026)]{Cristofano2026}
+Tony Cristofano.
+\newblock Surgical refusal ablation: Disentangling safety from intelligence via
+  concept-guided spectral cleaning.
+\newblock \emph{arXiv preprint arXiv:2601.08489}, 2026.
+\newblock \doi{10.48550/arXiv.2601.08489}.
+
+\bibitem[Deng et~al.(2026)Deng, Wang, Wang, Wan, Ma, Yang, Wei, Tang, Lin, Gao,
+  Li, Cao, Ren, Deng, Yang, Huang, Liu, and Zhou]{Deng2026}
+Boyi Deng, Xu~Wang, Yaoning Wang, Yunyang Wan, Yubo Ma, Baosong Yang, Haoran
+  Wei, Jialong Tang, Huan Lin, Ruize Gao, Tianhao Li, Qian Cao, Xuancheng Ren,
+  Xiaodong Deng, Anke Yang, Fei Huang, Dayiheng Liu, and Jingren Zhou.
+\newblock {Qwen-Scope}: Turning sparse features into development tools for
+  large language models.
+\newblock \emph{arXiv preprint arXiv:2605.11887}, 2026.
+\newblock \doi{10.48550/arXiv.2605.11887}.
+
+\bibitem[Elhage et~al.(2022)Elhage, Hume, Olsson, Schiefer, Henighan, Kravec,
+  Hatfield-Dodds, Lasenby, Drain, Chen, Grosse, McCandlish, Kaplan, Amodei,
+  Wattenberg, and Olah]{Elhage2022}
+Nelson Elhage, Tristan Hume, Catherine Olsson, Nicholas Schiefer, Tom Henighan,
+  Shauna Kravec, Zac Hatfield-Dodds, Robert Lasenby, Dawn Drain, Carol Chen,
+  Roger Grosse, Sam McCandlish, Jared Kaplan, Dario Amodei, Martin Wattenberg,
+  and Christopher Olah.
+\newblock Toy models of superposition.
+\newblock \emph{arXiv preprint arXiv:2209.10652}, 2022.
+\newblock \doi{10.48550/arXiv.2209.10652}.
+
+\bibitem[Gao et~al.(2024)Gao, la~Tour, Tillman, Goh, Troll, Radford, Sutskever,
+  Leike, and Wu]{Gao2024}
+Leo Gao, Tom~Dup{\'e} la~Tour, Henk Tillman, Gabriel Goh, Rajan Troll, Alec
+  Radford, Ilya Sutskever, Jan Leike, and Jeffrey Wu.
+\newblock Scaling and evaluating sparse autoencoders.
+\newblock In \emph{International Conference on Learning Representations}, 2024.
+\newblock \doi{10.48550/arXiv.2406.04093}.
+
+\bibitem[Jain et~al.(2024)Jain, Lubana, Oksuz, Joy, Torr, Sanyal, and
+  Dokania]{Jain2024}
+Samyak Jain, Ekdeep~Singh Lubana, Kemal Oksuz, Tom Joy, Philip H.~S. Torr,
+  Amartya Sanyal, and Puneet~K. Dokania.
+\newblock What makes and breaks safety fine-tuning? {A} mechanistic study.
+\newblock In \emph{Advances in Neural Information Processing Systems}, 2024.
+\newblock \doi{10.48550/arXiv.2407.10264}.
+
+\bibitem[Ji et~al.(2023)Ji, Liu, Dai, Pan, Zhang, Bian, Sun, Wang, and
+  Yang]{Ji2023}
+Jiaming Ji, Mickel Liu, Juntao Dai, Xuehai Pan, Chi Zhang, Ce~Bian, Ruiyang
+  Sun, Yizhou Wang, and Yaodong Yang.
+\newblock {BeaverTails}: Towards improved safety alignment of {LLM} via a
+  human-preference dataset.
+\newblock In \emph{Advances in Neural Information Processing Systems}, 2023.
+\newblock \doi{10.48550/arXiv.2307.04657}.
+
+\bibitem[Jiralerspong and Bricken(2026)]{Jiralerspong2026}
+Thomas Jiralerspong and Trenton Bricken.
+\newblock Cross-architecture model diffing with crosscoders: Unsupervised
+  discovery of differences between {LLM}s.
+\newblock \emph{arXiv preprint arXiv:2602.11729}, 2026.
+\newblock \doi{10.48550/arXiv.2602.11729}.
+
+\bibitem[Joad et~al.(2026)Joad, Hawasly, Boughorbel, Durrani, and
+  Sencar]{Joad2026}
+Faaiz Joad, Majd Hawasly, Sabri Boughorbel, Nadir Durrani, and Hüseyin~Taner
+  Sencar.
+\newblock There is more to refusal in large language models than a single
+  direction.
+\newblock \emph{arXiv preprint arXiv:2602.02132}, 2026.
+\newblock \doi{10.48550/arXiv.2602.02132}.
+
+\bibitem[Kassem et~al.(2026)Kassem, Jiralerspong, Rostamzadeh, and
+  Farnadi]{Kassem2026}
+Aly~M. Kassem, Thomas Jiralerspong, Negar Rostamzadeh, and Golnoosh Farnadi.
+\newblock Delta-crosscoder: Robust crosscoder model diffing in narrow
+  fine-tuning regimes.
+\newblock \emph{arXiv preprint arXiv:2603.04426}, 2026.
+\newblock \doi{10.48550/arXiv.2603.04426}.
+
+\bibitem[Kim et~al.(2026)Kim, Jin, Lee, and Han]{Kim2026}
+Su-Hyeon Kim, Hyundong Jin, Yejin Lee, and Youran Han.
+\newblock {CRaFT}: Circuit-guided refusal feature selection via cross-layer
+  transcoders.
+\newblock \emph{arXiv preprint arXiv:2604.01604}, 2026.
+\newblock \doi{10.48550/arXiv.2604.01604}.
+
+\bibitem[Li et~al.(2025)Li, Ye, Chen, Li, Zhang, Alinejad-Rokny, Peng, and
+  Yang]{Li2025}
+Jiaming Li, Haoran Ye, Yukun Chen, Xinyu Li, Lei Zhang, Hamid Alinejad-Rokny,
+  Jimmy Chih-Hsien Peng, and Min Yang.
+\newblock Training superior sparse autoencoders for instruct models.
+\newblock \emph{arXiv preprint arXiv:2506.07691}, 2025.
+\newblock \doi{10.48550/arXiv.2506.07691}.
+
+\bibitem[Llorente-Saguer(2026{\natexlab{a}})]{LlorenteSaguer2026a}
+Isaac Llorente-Saguer.
+\newblock The geometry of harmful intent: Training-free anomaly detection via
+  angular deviation in {LLM} residual streams.
+\newblock \emph{arXiv preprint arXiv:2603.27412}, 2026{\natexlab{a}}.
+\newblock \doi{10.48550/arXiv.2603.27412}.
+
+\bibitem[Llorente-Saguer(2026{\natexlab{b}})]{LlorenteSaguer2026b}
+Isaac Llorente-Saguer.
+\newblock Harmful intent as a geometrically recoverable feature of {LLM}
+  residual streams.
+\newblock \emph{arXiv preprint arXiv:2604.18901}, 2026{\natexlab{b}}.
+\newblock \doi{10.48550/arXiv.2604.18901}.
+
+\bibitem[Mazeika et~al.(2024)Mazeika, Phan, Yin, Zou, Wang, Mu, Sakhaee, Li,
+  Basart, Li, Forsyth, and Hendrycks]{Mazeika2024}
+Mantas Mazeika, Long Phan, Xuwang Yin, Andy Zou, Zifan Wang, Norman Mu, Elham
+  Sakhaee, Nathaniel Li, Steven Basart, Bo~Li, David Forsyth, and Dan
+  Hendrycks.
+\newblock {HarmBench}: A standardized evaluation framework for automated red
+  teaming and robust refusal.
+\newblock In \emph{International Conference on Machine Learning}, pages
+  35181--35224, 2024.
+\newblock \doi{10.48550/arXiv.2402.04249}.
+
+\bibitem[Nanfack et~al.(2026)Nanfack, Belilovsky, and Dohmatob]{Nanfack2026}
+G{\'e}raldin Nanfack, Eugene Belilovsky, and Elvis Dohmatob.
+\newblock Efficient refusal ablation in {LLM} through optimal transport.
+\newblock \emph{arXiv preprint arXiv:2603.04355}, 2026.
+\newblock \doi{10.48550/arXiv.2603.04355}.
+
+\bibitem[Shportko et~al.(2026)Shportko, Bhokare, Alzahrani, Cheng, Mercier, and
+  Hullman]{Shportko2026}
+A.~Shportko, Shubham Bhokare, Ahmed Zeyad~A. Alzahrani, Bowen Cheng,
+  G.~Mercier, and Jessica Hullman.
+\newblock Localizing {RL}-induced tool use to a single crosscoder feature.
+\newblock In \emph{ICML 2026 Workshop on Mechanistic Interpretability}, 2026.
+\newblock Spotlight.
+
+\bibitem[Templeton et~al.(2024)Templeton, Conerly, Marcus, Lindsey, Bricken,
+  Chen, Pearce, Citro, Ameisen, Jones, Cunningham, Turner, McDougall,
+  MacDiarmid, Tamkin, Durmus, Hume, Mosconi, Freeman, Sumers, Rees, Batson,
+  Jermyn, Carter, Olah, and Henighan]{Templeton2024}
+Adly Templeton, Tom Conerly, Jonathan Marcus, Jack Lindsey, Trenton Bricken,
+  Brian Chen, Adam Pearce, Craig Citro, Emmanuel Ameisen, Andy Jones, Hoagy
+  Cunningham, Nicholas Turner, Callum McDougall, Monte MacDiarmid, Alex Tamkin,
+  Esin Durmus, Tristan Hume, Francesco Mosconi, C.~Daniel Freeman, Theodore
+  Sumers, Edward Rees, Joshua Batson, Adam Jermyn, Shan Carter, Chris Olah, and
+  Tom Henighan.
+\newblock Scaling monosemanticity: Extracting interpretable features from
+  {Claude} 3 {Sonnet}.
+\newblock \emph{Transformer Circuits Thread}, 2024.
+\newblock URL
+  \url{https://transformer-circuits.pub/2024/scaling-monosemanticity}.
+\newblock Anthropic.
+
+\bibitem[Yeo et~al.(2025)Yeo, Prakash, Neo, Lee, Cambria, and
+  Satapathy]{Yeo2025}
+Wai~Jie Yeo, Nandini Prakash, Clifton Neo, Roy Ka-Wei Lee, Erik Cambria, and
+  Ranjan Satapathy.
+\newblock Understanding refusal in language models with sparse autoencoders.
+\newblock In \emph{Empirical Methods in Natural Language Processing}, pages
+  6377--6399, 2025.
+
+\end{thebibliography}

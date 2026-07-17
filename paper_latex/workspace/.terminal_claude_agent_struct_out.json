@@ -1,0 +1,10 @@
+{
+  "title": "Abliteration Cannot Erase RLHF in Qwen3-8B",
+  "summary": "Generated a 15-page publication-ready LaTeX paper titled 'Abliteration Cannot Erase RLHF: Geometric Evidence from SAE Encoder Directions in Qwen3-8B'. The paper covers: Abstract, Introduction (with 5 contributions), Related Work (4 thematic paragraphs), Methodology (6 subsections: three-model setup, SAE measurement instrument, feature metrics with Safety Change/Reversal Score/OLS Slope definitions, benign-SC overlap, layer selection and reconstruction quality gate, semantic labeling protocol), Evaluation Corpus, Results (10 subsections: layer selection, reversal score distribution, OLS slope magnitude preservation, null-baseline validation, refusal-direction orthogonality, benign-SC overlap, centroid analysis, downstream classification, semantic labeling, layer-20 replication), Discussion (4 subsections: geometric interpretation, preserved imprint characterization, safety restoration implications, limitations), and Conclusion with future directions. Two formatted tables are included (Table 1: imprinted/reversed direction counts at 4 thresholds; Table 2: quantitative results at layers 22 and 20). All 8 mathematical equations are properly typeset (SAE forward pass, Safety Change, Reversal Score delta vectors, OLS slope, cosine similarity). BibTeX bibliography built via Semantic Scholar for 23 references with 4 hand-written entries (Bricken 2023 Transformer Circuits Thread, Templeton 2024 Transformer Circuits Thread, Conover 2023 Databricks Blog, Yeo 2025 EMNLP). No figures available so 0 \\includegraphics commands (matching the 0 available figures). All 4 GitHub footnote URLs preserved. Compilation: pdflatex + bibtex + pdflatex + pdflatex, all citations resolved (no ?? marks). PDF is 297KB, 15 pages. Visual review of all 15 pages confirmed: clean typography, no layout issues, correct equation rendering, readable tables, working hyperlinks.",
+  "out_expected_files": {
+    "paper_tex_path": "paper.tex",
+    "paper_pdf_path": "paper.pdf",
+    "references_bib_path": "references.bib",
+    "figure_paths": []
+  }
+}

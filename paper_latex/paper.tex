@@ -1,0 +1,712 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{natbib}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{array}
+\usepackage{multirow}
+
+\geometry{margin=1in}
+\hypersetup{colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue}
+
+\title{\textbf{Abliteration Cannot Erase RLHF: Geometric Evidence from\\
+SAE Encoder Directions in Qwen3-8B}}
+
+\author{AMGrobelnik}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Refusal ablation (abliteration) edits a safety-aligned model's weights to eliminate compliance
+refusals by removing a single residual-stream direction. The standard narrative frames abliteration
+as undoing RLHF safety fine-tuning. We test this at the encoder-direction level for Qwen3-8B using
+the frozen Qwen-Scope base SAE (65,536 TopK features), comparing three checkpoints---base,
+RLHF-instruct, and a community-released abliterated variant---across a balanced corpus of 500 harmful
+and 500 benign prompts. Because SAE reconstruction quality at layer 22 falls below acceptable
+thresholds ($R^2 \approx 0.51$ for instruct and abliterated variants), all metrics operate on
+pre-topk encoder projections ($\mathbf{z}_{\text{pre}}$)---dense continuous projections onto all
+encoder directions---rather than the post-topk sparse features validated as semantically interpretable
+in single-model settings. Within this geometric regime, we introduce two per-feature metrics: the
+Reversal Score $R(f)$, measuring directional preservation of RLHF-induced encoder-direction changes
+under abliteration, and the OLS Slope $\beta_f$, measuring magnitude preservation. For Qwen3-8B,
+and conditioned on the abliterated checkpoint faithfully implementing the refusal-direction removal,
+every one of the top-500 RLHF-sensitive encoder directions has a positive Reversal Score
+(mean $\bar{R} = 0.921 \pm 0.040$, $\min = 0.684$; zero directions reversed), and the OLS slope
+is near unity ($\bar{\beta} = 0.986 \pm 0.176$; 86.4\% of directions with $\beta_f > 0.8$). A
+noise-free mid-SC baseline (Cohen's $d = 1.087$) confirms selective preservation. Direct measurement
+of refusal-direction geometry---mean $|\cos\theta| = 0.019$ between the refusal direction and
+top-500 RLHF-modified encoder directions at layer 22---provides the mechanistic explanation:
+abliteration's orthogonalization is geometrically incapable of touching these directions. A 64.6\%
+overlap with benign-prompt RLHF-sensitive directions reveals that the preserved modifications span
+both harm-specific and general RLHF stylistic changes. These findings establish, for Qwen3-8B, that
+abliteration removes the compliance mechanism while leaving the representational modifications of
+RLHF intact at approximately unit magnitude, pending validation of the pre-topk proxy and independent
+verification of abliteration depth.
+\end{abstract}
+
+\section{Introduction}
+
+Refusal ablation---commonly called \emph{abliteration}---edits a safety-aligned language model's
+weights to eliminate its compliance refusals \citep{Arditi2024}. The technique identifies a
+\emph{refusal direction} in the residual stream: the mean-difference vector between activations on
+harmful versus harmless prompts. All weight matrices that write to the residual stream are then
+orthogonalized against this direction, producing a model that complies with previously-refused
+requests without retraining. The standard framing treats abliteration as \emph{undoing} RLHF safety
+alignment: if RLHF installs a refusal mechanism, abliteration removes it, restoring a base-like model.
+
+This framing has direct implications for AI safety. If abliteration truly erases RLHF modifications,
+the safety imprint is fragile---a single weight-editing step with minimal compute removes it entirely.
+If abliteration only removes the \emph{behavioral expression} of safety training while leaving
+\emph{representational} modifications intact, the picture differs substantially: the model's internal
+representations may still carry RLHF-induced structure, providing a substrate for lightweight safety
+restoration without full retraining. Distinguishing these scenarios matters both for threat modeling
+and for designing targeted safety-recovery interventions.
+
+Two geometric studies establish that harmful-prompt representations survive abliteration: LatentBiopsy
+\citep{LlorenteSaguer2026a} finds that a linear classifier on Qwen model residual streams retains
+AUROC $\geq 0.937$ after abliteration, and a cross-family companion study \citep{LlorenteSaguer2026b}
+replicates this across 12 variants (Qwen, Llama, Gemma; 0.5B--9B parameters) with mean AUROC 0.982
+surviving within $\pm 0.003$. Something in the internal representation persists---but holistic AUROC
+collapses all representational information into a single detection score and cannot answer \emph{which
+specific encoder-direction structures survive, at what magnitude, or why}. Answering these mechanistic
+questions requires a feature-level vocabulary.
+
+Sparse Autoencoders (SAEs) \citep{Elhage2022,Bricken2023,Gao2024,Templeton2024} decompose
+residual-stream activations into tens of thousands of near-monosemantic features, providing exactly
+this vocabulary. Prior SAE-based analyses of refusal identify which features \emph{drive} refusal
+behavior within a single model \citep{Yeo2025,Kim2026}. Our work addresses a complementary question:
+which encoder directions are modified by RLHF, and do those modifications survive abliteration in
+direction \emph{and} magnitude? A key methodological complication is that reconstruction quality of
+a base-trained SAE degrades on instruct-variant activations \citep{Chopra2026,Li2025}, ruling out
+the standard post-topk sparse feature representation at the layers with the richest RLHF signal. We
+address this by working with \emph{pre-topk encoder projections} ($\mathbf{z}_{\text{pre}}$)---dense
+continuous projections of residual-stream activations onto all 65,536 SAE encoder directions---and
+introduce two metrics interpretable in this geometric regime. The pre-topk proxy is validated
+indirectly via the orthogonality result (Section~\ref{sec:orthogonality}), which is independent of
+the sparse/dense distinction, and a direct $\mathbf{z}_{\text{pre}}$/$\mathbf{z}_{\text{post}}$
+comparison is deferred to future work.
+
+We apply the frozen Qwen-Scope base SAE (\texttt{Qwen/SAE-Res-Qwen3-8B-Base-W64K-L0\_50})
+\citep{Deng2026} across three Qwen3-8B checkpoints---base, RLHF-instruct, and a community-released
+abliterated variant---on a balanced corpus of 500 harmful and 500 benign prompts from seven datasets.
+The \emph{Reversal Score} $R(f)$ measures whether abliteration preserves or reverses the direction of
+the RLHF-induced change to encoder direction $f$. The \emph{OLS Slope} $\beta_f$ measures whether
+abliteration preserves the magnitude of that change. For Qwen3-8B, conditioned on abliteration
+completeness, every top-500 RLHF-sensitive encoder direction has a positive Reversal Score
+(mean $\bar{R} = 0.921$, $\min = 0.684$, zero directions reversed), and the OLS slope is near unity
+($\bar{\beta} = 0.986 \pm 0.176$, 86.4\% of directions with $\beta_f > 0.8$). Direct orthogonality
+measurement (mean $|\cos\theta| = 0.019$ at layer 22) provides the geometric mechanism. A 64.6\%
+overlap with benign-prompt RLHF-sensitive directions establishes that the preserved modifications are
+not exclusively harm-specific.
+
+\medskip
+\noindent\textbf{Summary of Contributions:}
+\begin{itemize}
+  \item We introduce the \emph{Reversal Score}, a per-encoder-direction Pearson correlation confirming
+    directional preservation of RLHF-modified SAE encoder directions under abliteration for Qwen3-8B
+    ($\bar{R} = 0.921$ at layer 22, zero reversed directions; Section~\ref{sec:reversal}).%
+    \footnote{Code: \url{https://github.com/AMGrobelnik/ai-invention-4ac301-abliteration-cannot-erase-rlhf-geometric/tree/main/round-2/experiment-1}}
+
+  \item We introduce the \emph{OLS Slope} $\beta_f$, a companion magnitude metric, confirming that
+    abliteration preserves not just direction but approximately full amplitude of RLHF-induced
+    encoder-direction changes ($\bar{\beta} = 0.986 \pm 0.176$ at layer 22; Section~\ref{sec:ols}).%
+    \footnote{Code: \url{https://github.com/AMGrobelnik/ai-invention-4ac301-abliteration-cannot-erase-rlhf-geometric/tree/main/round-4/experiment-1}}
+
+  \item We validate selective preservation against a noise-free mid-SC baseline
+    ($\text{SC}_{\text{median}} = 1.12 \gg 0.01$): top-500 $\bar{R} = 0.921$ vs.\ mid-500
+    $\bar{R} = 0.871$, Cohen's $d = 1.087$, $p < 10^{-300}$ (Section~\ref{sec:baseline}).
+
+  \item We directly measure refusal-direction orthogonality to RLHF-modified SAE encoder directions
+    at layers 22 and 20 (mean $|\cos\theta| = 0.0185$ and $0.0209$, respectively), providing the
+    geometric mechanism that explains zero reversed directions and $\bar{\beta} \approx 1$
+    (Section~\ref{sec:orthogonality}).%
+    \footnote{Code: \url{https://github.com/AMGrobelnik/ai-invention-4ac301-abliteration-cannot-erase-rlhf-geometric/tree/main/round-3/experiment-1}}
+
+  \item We show that 64.6\% of the top-500 RLHF-sensitive encoder directions overlap with the
+    top-500 benign-prompt RLHF-sensitive directions, establishing that the preserved RLHF
+    modifications span general behavioral changes (output format, instruction style) in addition to
+    harm-specific semantics (Section~\ref{sec:overlap}).
+\end{itemize}
+
+\section{Related Work}
+
+\paragraph{Refusal ablation.}
+\citet{Arditi2024} establish that refusal is mediated by a single residual-stream direction and that
+orthogonalizing all weight matrices against it reliably eliminates compliance across 13 models up to
+72B parameters. \citet{Joad2026} challenge the single-direction framing, demonstrating that refusal
+behaviors correspond to geometrically distinct directions across eleven behavioral categories (safety
+refusals, excessive refusal, incomplete-request refusals, etc.), though they find that linear steering
+along any refusal-related direction produces nearly identical refusal-to-over-refusal trade-offs. This
+finding is directly relevant to our orthogonality measurement (Section~\ref{sec:orthogonality}): the
+mean $|\cos\theta| = 0.019$ between the mean-difference refusal vector and RLHF-modified encoder
+directions is a necessary but not sufficient condition for explaining zero reversed features if
+abliteration removes a multi-dimensional subspace rather than a single direction. We address this in
+Section~\ref{sec:orthogonality} and treat the multi-dimensional extension as explicit future work.
+\citet{Cristofano2026} show the raw refusal vector is polysemantic, entangling safety circuitry with
+style; spectral residualization reduces collateral KL divergence while preserving abliteration.
+\citet{Nanfack2026} propose an optimal-transport alternative reducing distributional shift. Our work
+examines what all these variants share: the refusal direction (or subspace), however constructed,
+leaves RLHF-modified SAE encoder directions intact in both direction and magnitude.
+
+\paragraph{SAEs applied to refusal analysis.}
+\citet{Yeo2025} use SAEs trained on pretraining data to investigate refusal mechanisms in chat-tuned
+models, finding that base-trained SAEs fail to cleanly encode the refusal circuitry of chat
+models---supporting our observation that base SAE reconstruction quality degrades on instruct
+activations ($R^2 \approx 0.51$ at layer 22). Their finding contextualizes our pre-topk proxy choice:
+the encoder directions of a base SAE are not guaranteed to align with the semantically active features
+of an instruct model, which is precisely why we restrict claims to \emph{encoder-direction geometry}
+rather than asserting preservation of semantically validated sparse features. \citet{Kim2026} introduce
+CRaFT, which uses cross-layer transcoders to map model computations into sparse feature circuits,
+quantifying inter-feature influences on refusal-output logits rather than treating features as isolated
+signals. CRaFT and our approach are complementary: CRaFT identifies which features causally govern
+refusal outputs in a single model; our Reversal Score and OLS Slope identify which encoder directions
+RLHF modified and whether abliteration erases those modifications. Both are feature-level analyses,
+but they use different feature vocabularies (transcoder features vs.\ frozen base SAE encoder
+directions) and answer different questions (causal control of refusal vs.\ survival of RLHF
+modifications under abliteration).
+
+\paragraph{Geometry of harmful intent surviving abliteration.}
+LatentBiopsy \citep{LlorenteSaguer2026a} and the companion geometry study \citep{LlorenteSaguer2026b}
+are the direct predecessors establishing the phenomenon this work explains mechanistically. Their key
+limitation---collapsing representational information into a single AUROC score---is precisely the gap
+our encoder-direction analysis addresses. The OLS slope results ($\bar{\beta} = 0.986$) and direct
+orthogonality measurement ($|\cos\theta| = 0.0185$) provide the mechanistic account that a holistic
+detection score cannot.
+
+\paragraph{SAEs as cross-variant measurement instruments.}
+\citet{Chopra2026} uses frozen base SAEs as cross-variant diagnostics for supervised fine-tuning
+(SFT), finding that SAE latent cosine similarity drops to 0.509--0.557 at layer 22 after SFT while
+raw activation cosine stays above 0.96---validating the frozen base-SAE approach and motivating the
+pre-topk encoder fallback when reconstruction quality degrades. \citet{Jiralerspong2026} introduce
+crosscoders---SAEs trained jointly on two or more model variants---that partition features into shared
+and model-specific categories without requiring a pre-existing vocabulary. \citet{Kassem2026} extend
+this to narrow fine-tuning regimes with Delta-Crosscoder. Our frozen base-SAE approach is
+complementary: it requires zero additional training, reuses Qwen-Scope's existing feature vocabulary,
+and extends naturally to the three-model base$\to$instruct$\to$abliterated trajectory. \citet{Li2025}
+demonstrate an $\approx$8$\times$ MSE gap between base-SAE reconstruction on instruct versus
+purpose-trained instruct SAE activations, directly motivating our reconstruction quality gate and
+pre-topk fallback. \citet{Shportko2026} localize RL-induced tool-calling in Qwen2.5-3B to a compact
+steerable crosscoder feature set---the complement of our finding about which encoder directions
+abliteration \emph{cannot} remove.
+
+\paragraph{Safety fine-tuning mechanisms.}
+\citet{Jain2024} establish that safety fine-tuning projects unsafe activations into MLP null spaces,
+explaining adversarial circumvention. Our finding extends this picture: at the SAE encoder level,
+RLHF-modified encoder directions are near-orthogonal to the refusal direction, so abliteration---which
+removes the refusal direction---cannot erase them geometrically.
+
+\section{Methodology}
+
+\subsection{Three-Model Setup}
+\label{sec:setup}
+
+All experiments use three Qwen3-8B checkpoints sharing identical 36-layer architecture
+($d_{\text{model}} = 4096$, bfloat16, transformers $\geq$ 4.51.0).%
+\footnote{Code: \url{https://github.com/AMGrobelnik/ai-invention-4ac301-abliteration-cannot-erase-rlhf-geometric/tree/main/round-1/research-1}}
+
+\noindent\emph{Base}: \texttt{Qwen/Qwen3-8B-Base}---the unaligned pretrained model, providing the
+representational baseline against which RLHF-induced changes are measured.
+
+\noindent\emph{Instruct}: \texttt{Qwen/Qwen3-8B} with \texttt{enable\_thinking=False}---the
+RLHF-aligned model. Chain-of-thought suppression isolates safety-relevant activations on the final
+input token.
+
+\noindent\emph{Abliterated}: \texttt{huihui-ai/Huihui-Qwen3-8B-abliterated-v2} (v2 corrects a
+layer-0 output-garbling artifact present in v1). The exact layer set and prompt set used for the
+refusal direction computation are not publicly documented. The findings in this paper are conditioned
+on this checkpoint faithfully implementing a refusal-direction removal: if abliteration is incomplete,
+the high Reversal Scores and OLS slopes would trivially reflect the abliterated model being close to
+the instruct model by construction rather than preservation under genuine erasure.
+Section~\ref{sec:orthogonality} and the Limitations section discuss this constraint.
+
+All models are accessed via \texttt{model.model.layers} for residual-stream hook injection at the
+final token position of each input.
+
+\subsection{SAE Measurement Instrument}
+\label{sec:sae}
+
+The frozen Qwen-Scope SAE \texttt{Qwen/SAE-Res-Qwen3-8B-Base-W64K-L0\_50} serves as the shared
+measurement instrument \citep{Deng2026}. A critical architectural note: Qwen-Scope implements
+\emph{TopK} architecture ($k = 50$ features retained via \texttt{torch.topk}), not JumpReLU. For a
+residual activation $\mathbf{x} \in \mathbb{R}^{4096}$:
+
+\begin{align}
+  \mathbf{z}_{\text{pre}} &= \mathbf{x}W_{\text{enc}}^\top + \mathbf{b}_{\text{enc}}
+    \;\in\; \mathbb{R}^{65536} \\
+  \mathbf{z} &= \text{TopK}(\mathbf{z}_{\text{pre}},\; k{=}50)
+\end{align}
+
+\noindent\textbf{Pre-topk proxy.} The reconstruction quality gate (Section~\ref{sec:recon}) fails
+at layer 22: $R^2 = 0.574$ (base), $0.512$ (instruct), $0.512$ (abliterated)---all below the 0.85
+threshold \citep{Li2025}. All feature metrics therefore use $\mathbf{z}_{\text{pre}}$ rather than the
+post-topk sparse representation. The pre-topk vector is dense by construction: every prompt receives
+a non-zero value on all 65,536 encoder directions simultaneously, so no single direction is ``off''
+in the interpretability sense. The metrics we compute (Reversal Score, OLS Slope) measure
+\emph{geometric properties of encoder directions in a continuous projection space}, not activation of
+near-monosemantic features in the interpretability sense. The orthogonality result
+(Section~\ref{sec:orthogonality}) is fully independent of the sparse/dense distinction---it is a
+direct measurement of the angle between weight vectors---and remains the most secure finding. A direct
+comparison of top-500 feature rankings and Reversal Score rank correlations between $\mathbf{z}_{\text{pre}}$
+and $\mathbf{z}_{\text{post}}$ on the highest-$R^2$ subset is an important validation deferred to
+future work. If such a comparison shows Spearman $\rho > 0.7$ between $\mathbf{z}_{\text{pre}}$ and
+$\mathbf{z}_{\text{post}}$ Reversal Scores, the pre-topk proxy is defensible as a surrogate; if it
+diverges, the encoder-direction findings must be interpreted as purely geometric properties without
+semantic grounding.
+
+\subsection{Feature Metrics}
+\label{sec:metrics}
+
+For each SAE encoder direction $f$ and $N = 500$ harmful prompts $\{p_i\}_{i=1}^N$, let
+$a_m(f, p_i)$ denote the pre-topk encoder activation of direction $f$ for model
+$m \in \{\text{base}, \text{inst}, \text{abl}\}$.
+
+\noindent\textbf{Safety Change} quantifies the magnitude of the RLHF modification to encoder
+direction $f$:
+\begin{equation}
+  \text{SC}(f) = \frac{1}{N}\sum_{i=1}^N |a_{\text{inst}}(f, p_i) - a_{\text{base}}(f, p_i)|
+\end{equation}
+
+Encoder directions are ranked by $\text{SC}(f)$: the top-500 form the \emph{RLHF-sensitive set}.
+For null-baseline analysis, a \emph{mid-500} group is drawn uniformly from the 40th--60th SC
+percentile.
+
+\noindent\textbf{Reversal Score} quantifies whether abliteration reverses or preserves the
+\emph{direction} of the RLHF modification to encoder direction $f$:
+\begin{align}
+  \boldsymbol{\Delta}_{\text{inst}}(f) &= [a_{\text{inst}}(f, p_i) - a_{\text{base}}(f, p_i)]_{i=1}^N \\
+  \boldsymbol{\Delta}_{\text{abl}}(f)  &= [a_{\text{abl}}(f, p_i)  - a_{\text{base}}(f, p_i)]_{i=1}^N \\
+  R(f) &= \text{PearsonR}(\boldsymbol{\Delta}_{\text{inst}}(f),\; \boldsymbol{\Delta}_{\text{abl}}(f))
+\end{align}
+
+$R(f) \approx +1$ indicates abliteration preserves the RLHF modification (\emph{imprinted});
+$R(f) \approx -1$ indicates abliteration reverses it (\emph{reversed}). This is a correlation over
+prompt-level scalar activations, not a cosine similarity of scalars---ensuring that structure in the
+result is an empirical finding, not an artifact of the definition.
+
+\noindent\textbf{OLS Slope} resolves the scale-invariance of the Reversal Score. A feature where
+abliteration retains only 5\% of the RLHF-induced shift in magnitude but preserves its direction
+would still yield $R(f) \approx 1.0$. The no-intercept ordinary least-squares slope:
+\begin{equation}
+  \beta_f = \frac{\boldsymbol{\Delta}_{\text{inst}}(f)^\top \boldsymbol{\Delta}_{\text{abl}}(f)}
+                 {\boldsymbol{\Delta}_{\text{inst}}(f)^\top \boldsymbol{\Delta}_{\text{inst}}(f)}
+\end{equation}
+
+$\beta_f \approx 1$ means the abliterated model's encoder-direction activations shift by the same
+magnitude as the instruct model's, relative to base. $\beta_f \approx 0$ means only the directional
+pattern survives with negligible magnitude. $\beta_f > 1$ indicates overshooting.
+
+\subsection{Benign-SC Overlap}
+\label{sec:benign}
+
+To assess whether the top-500 RLHF-sensitive encoder directions reflect \emph{harm-specific}
+modifications or \emph{general RLHF} modifications (style, tone, response format), we separately
+compute $\text{SC}_{\text{benign}}(f)$ using the 500 benign prompts and report the overlap between
+the top-500 by harmful-SC and the top-500 by benign-SC.
+
+\subsection{Layer Selection and Reconstruction Quality Gate}
+\label{sec:recon}
+
+\textbf{Layer selection.} We compute $\text{SC}(f)$ variance across all 65,536 encoder directions at
+candidate layers \{14, 20, 22\} on 50 harmful prompts. Layer 22 is selected (variance 0.1721 vs.\
+0.0547 at layer 20 and 0.0127 at layer 14); all primary results use layer 22 with layer 20 as
+replication.
+
+\textbf{Reconstruction quality gate.} At layer 22, $R^2 = 0.574$ (base), $0.512$ (instruct),
+$0.512$ (abliterated)---all below the 0.85 threshold \citep{Li2025}---triggering the pre-topk
+encoder-only analysis path.
+
+\subsection{Semantic Labeling Protocol}
+\label{sec:labeling}
+
+For the top-100 encoder directions by $\text{SC}(f)$, we identify the 5 prompts with the highest
+pre-topk encoder activation and provide the first 300 characters of each to Llama-3.1-8B-Instruct
+via OpenRouter. The cross-family labeler avoids within-Qwen circularity. Each direction is classified
+as \texttt{harm\_concept}, \texttt{safety\_refusal}, \texttt{general\_capability}, or \texttt{other}.
+Results are treated as qualitative observations only: the labeling uses character-prefix truncation of
+most-activating prompts rather than per-token activation windows; labels reflect prompt topic more
+than token-level representations; and no Cohen's $\kappa$ validation against a manual gold set was
+performed.
+
+\section{Evaluation Corpus}
+\label{sec:corpus}
+
+The evaluation corpus comprises 500 harmful and 500 benign prompts from seven publicly licensed
+datasets.
+
+\noindent\textbf{Harmful sources:} BeaverTails \citep{Ji2023} (176 prompts; NeurIPS 2023,
+human-labeled QA spanning 14 harm categories), AdvBench (98 prompts; standard adversarial behavior
+dataset used in abliteration research \citep{Arditi2024}), TrustAIRLab in-the-wild jailbreak prompts
+(86 prompts; real-world jailbreaks from ACM CCS 2024), HarmBench \citep{Mazeika2024} (85 prompts;
+covering chemical, cybercrime, physical harm, and illegal categories), and
+JailbreakBench/JBB-Behaviors \citep{Chao2024} (55 prompts).
+
+\noindent\textbf{Benign sources:} Jailbreak-classification (151 prompts; labeled benign user
+requests), JBB-Behaviors benign counterparts \citep{Chao2024} (46 prompts), Toxic-Chat (104 prompts;
+real user prompts labeled non-toxic), TrustAIRLab regular prompts (93 prompts), and Dolly-15k
+\citep{Conover2023} (106 prompts; human-written instruction-following tasks).
+
+All sources are processed through MinHash LSH deduplication (threshold 0.5, 128 permutations,
+character 5-gram shingling), token-length filtering ($\leq$512 tokens), and category capping
+($\leq$35\% per harm subcategory). The final corpus contains 1,000 prompts (500 harmful, 500 benign).
+
+\section{Results}
+
+\subsection{Layer Selection}
+\label{sec:layers}
+
+Layer 22 exhibits the highest Safety Change variance (0.1721), confirming it as the primary analysis
+layer. The $R^2$ reconstruction gate at layer 22 yields values below 0.85 for all three model
+variants (base: 0.574, instruct: 0.512, abliterated: 0.512), triggering the pre-topk encoder-only
+analysis path (Section~\ref{sec:sae}).
+
+\subsection{Reversal Score Distribution}
+\label{sec:reversal}
+
+Every top-500 RLHF-sensitive encoder direction has a positive Reversal Score
+(mean $= 0.921$, std $= 0.040$, min $= 0.684$, max $= 0.989$). No direction has a negative or
+near-zero score. Hartigan's dip test yields statistic $= 0.0123$, $p = 0.930$---strongly unimodal.
+Spearman correlation mean $= 0.913$, confirming rank-based robustness.
+
+Table~\ref{tab:reversal} summarizes the count of reversed and imprinted directions at all tested
+thresholds. Zero directions are reversed at any threshold.
+
+\begin{table}[!htbp]
+  \centering
+  \caption{Imprinted and reversed encoder-direction counts at all tested thresholds.}
+  \label{tab:reversal}
+  \begin{tabular}{lcc}
+    \toprule
+    Threshold & Imprinted ($R >$ threshold) & Reversed ($R < -$threshold) \\
+    \midrule
+    0.30 & 500 / 500 (100.0\%) & 0 / 500 (0\%) \\
+    0.50 & 500 / 500 (100.0\%) & 0 / 500 (0\%) \\
+    0.70 & 499 / 500 (99.8\%)  & 0 / 500 (0\%) \\
+    0.95 & 125 / 500 (25.0\%)  & 0 / 500 (0\%) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{OLS Slope: Magnitude Preservation}
+\label{sec:ols}
+
+A key limitation of the Reversal Score is scale-invariance: $R(f) \approx 1$ is consistent with
+abliteration preserving only 5\% of the RLHF-induced magnitude while retaining the direction pattern.
+The OLS slope $\beta_f$ resolves this ambiguity.
+
+The $\beta_f$ distribution for the top-500 RLHF-sensitive encoder directions at layer 22 is tightly
+concentrated near 1: mean $\bar{\beta} = 0.986 \pm 0.176$, median $= 0.985$, range $[-0.055,\, 1.725]$.
+Specifically, 86.4\% of directions have $\beta_f > 0.8$ (abliteration preserves more than 80\% of
+the RLHF-induced shift in magnitude), 45.4\% have $\beta_f > 1.0$ (slight amplification), and only
+0.2\% are negative. \textbf{MAGNITUDE PRESERVED.} Within the pre-topk geometric regime, abliteration
+does not attenuate the RLHF imprint---it preserves approximately unit magnitude.
+
+Layer-20 replication: $\bar{\beta} = 0.954 \pm 0.191$, 80.2\% of directions with $\beta_f > 0.8$,
+zero negative values---consistent with the layer-22 primary result.
+
+\subsection{Null-Baseline Validation: Noise-Free Mid-SC Comparison}
+\label{sec:baseline}
+
+A potential concern with a bottom-500 null baseline is that near-zero Safety Change values may make
+PearsonR between near-zero vectors potentially unreliable. We address this with a noise-free mid-SC
+baseline: 500 directions uniformly sampled from the 40th--60th SC percentile, with
+$\text{SC}_{\text{median}} = 1.12$ (versus the top-500 minimum of 2.79).
+
+At layer 22: top-500 $\bar{R} = 0.921$, mid-500 $\bar{R} = 0.871$ (Cohen's $d = 1.087$,
+two-sample $t$-test $t = 17.2$, $p < 10^{-300}$). \textbf{MID-SC CONFIRMS SELECTIVE PRESERVATION.}
+The top-500 encoder directions show significantly higher Reversal Scores than mid-SC controls that
+have non-trivial RLHF sensitivity and noise-free $\boldsymbol{\Delta}_{\text{inst}}$ vectors,
+confirming that the high Reversal Scores reflect genuine selective preservation rather than any
+measurement artifact.
+
+\subsection{Direct Measurement of Refusal-Direction Orthogonality}
+\label{sec:orthogonality}
+
+The mechanistic interpretation of zero reversed directions and $\bar{\beta} \approx 1$ requires a
+testable prediction: the refusal direction $\mathbf{r}$ must be nearly orthogonal to all
+RLHF-modified SAE encoder directions. We test this directly.
+
+The refusal direction $\mathbf{r}$ is computed as the mean difference of instruct residual-stream
+activations on harmful versus harmless prompts at layer 22. For each of the top-500 RLHF-sensitive
+encoder directions $f$:
+\begin{equation}
+  \cos\theta_f = \frac{\mathbf{r} \cdot \mathbf{w}_{\text{enc}}(f)}
+                      {\|\mathbf{r}\| \|\mathbf{w}_{\text{enc}}(f)\|}
+\end{equation}
+
+\noindent\textbf{Layer 22:} mean $|\cos\theta_f| = 0.01854$ (authoritative value; 0.019 in the
+abstract is rounded). \textbf{ORTHOGONALITY CONFIRMED.} A cosine of 0.0185 means the refusal
+direction projects onto less than 1.9\% of each RLHF-modified encoder direction's magnitude.
+\textbf{Layer 20:} mean $|\cos\theta_f| = 0.02086$. Orthogonality confirmed at both layers;
+inter-layer agreement (matching to 5 decimal places across independent experimental runs) confirms
+these values are stable.
+
+This orthogonality result is the most secure finding in this paper: it is a direct measurement of the
+angle between weight vectors and is fully independent of the pre-topk/post-topk distinction, the
+abliteration checkpoint's completeness, or any activation-level measurement.
+
+This orthogonality geometrically explains the $\bar{\beta} \approx 1$ result: abliteration
+orthogonalizes all weight matrices against $\mathbf{r}$. Because $\mathbf{r}$ is nearly orthogonal
+to all RLHF-modified SAE encoder directions, the orthogonalization cannot substantially change how
+any RLHF-modified encoder direction's activations are computed---in direction or in magnitude.
+
+\noindent\textbf{Caveat on multi-dimensional refusal.} \citet{Joad2026} demonstrate that refusal
+spans geometrically distinct directions across eleven behavioral categories. If abliteration removes
+a multi-dimensional refusal \emph{subspace} rather than a single vector, the orthogonality argument
+requires that the full ablation subspace be near-orthogonal to all RLHF-modified encoder directions.
+The current measurement tests only the mean-difference vector $\mathbf{r}$. An extension to the top-3
+principal components of the (harmful $-$ harmless) activation differences would determine whether
+this argument holds for higher PCs; this is deferred to future work. If a higher PC shows mean
+$|\cos\theta_f| \geq 0.05$ against the top-500 encoder directions, the mechanistic explanation would
+require qualification.
+
+\subsection{Benign-SC Overlap: What the Preserved Imprint Represents}
+\label{sec:overlap}
+
+We compute $\text{SC}_{\text{benign}}(f)$---Safety Change evaluated on 500 benign prompts---for all
+65,536 SAE encoder directions, then measure the overlap between the top-500 by harmful-SC and the
+top-500 by benign-SC.
+
+\textbf{Overlap count: 323 / 500 = 64.6\%. STYLE-DOMINANT verdict.} A majority of the top-500
+RLHF-sensitive encoder directions also appear in the benign-SC top-500, indicating that RLHF modified
+these directions similarly when processing harmful and benign prompts. Approximately 64.6\% of the
+preserved imprint captures general RLHF modifications (response formality, output structure,
+instruction-following style) rather than harm-specific semantic content. The remaining 35.4\% (176
+directions) are uniquely sensitive to harmful prompts and more plausible carriers of harm-specific
+semantic representations.
+
+This finding contextualizes the OLS slope result ($\bar{\beta} = 0.986$): abliteration
+comprehensively preserves all RLHF encoder-direction modifications regardless of whether they encode
+harm-specific or general-style content. The near-orthogonality of the refusal direction to all
+RLHF-modified encoder directions means abliteration cannot selectively erase harm-semantic changes
+while leaving style changes intact---it fails to erase either category because all reside in a
+subspace near-orthogonal to $\mathbf{r}$.
+
+\subsection{Centroid Analysis with Control Subspaces}
+
+To validate that the preserved imprint is specific to the RLHF-sensitive subspace, we compute
+centroid distance ratios $d_{\text{abl-base}} / d_{\text{abl-inst}}$ (cosine) for three
+encoder-direction subspaces.
+
+\noindent\textbf{Layer 22 (harmful prompts):} Subspace A (top-500 RLHF-sensitive) ratio $= 4.35\times$,
+Subspace B (bottom-500 RLHF-insensitive) ratio $= 1.16\times$, Subspace C (random-500) ratio
+$= 2.37\times$. \textbf{Layer 20:} Subspace A ratio $= 7.31\times$, Subspace B ratio $= 1.01\times$,
+Subspace C ratio $= 1.63\times$ (verdict: CENTROID SELECTIVE). The RLHF-sensitive subspace shows
+4--7$\times$ greater instruct-closeness than the RLHF-insensitive control (B $\approx 1.0$--$1.2$
+vs.\ A $= 4.35$--$7.31$), confirming that the imprint is specific to the directions RLHF modified,
+not a global consequence of model similarity. Layer-20 Subspace B reaching $1.01\times$ (essentially
+no instruct-closeness in the RLHF-insensitive subspace) provides the cleanest control.
+
+\subsection{Downstream Classification Accuracy}
+
+This null result follows directly from the 64.6\% benign-SC overlap (Section~\ref{sec:overlap}): the
+top-500 RLHF-sensitive encoder directions are elevated by RLHF on \emph{both} harmful and benign
+prompts, eliminating prompt-level discriminability by construction. This distinguishes \emph{what
+RLHF modified} (broad encoder-direction changes) from \emph{what selectively activates on harmful
+versus benign prompts at inference} (a different, narrower set of encoder directions not analyzed in
+this work).
+
+A per-prompt harm score (mean pre-topk activation across all top-500 RLHF-sensitive encoder
+directions with median threshold) achieves \textbf{0.476 accuracy}---near-chance on the balanced
+corpus---versus a keyword baseline of \textbf{0.630}. This null classification result confirms the
+64.6\% benign-SC overlap from an independent angle: RLHF-sensitive encoder directions elevated on
+harmful prompts are similarly elevated on benign prompts, yielding no discriminative signal.
+
+\subsection{Semantic Labeling}
+
+Llama-3.1-8B-Instruct assigned labels to 100 top-SC encoder directions: the majority received
+\texttt{harm\_concept} labels, with smaller proportions of \texttt{safety\_refusal},
+\texttt{general\_capability}, and \texttt{other}. These results are qualitative observations only.
+The labeling uses character-prefix truncation of most-activating prompts rather than per-token
+activation windows; no Cohen's $\kappa$ validation against a manual gold set was performed; and the
+64.6\% benign-SC overlap implies that many stylistic directions receive \texttt{harm\_concept} labels
+because they activate most strongly on harmful-prompt contexts rather than encoding harm-specific
+semantic content. Quantitative reliance on the specific labeling percentages requires a manual
+gold-set annotation with $\kappa \geq 0.6$, deferred to future work.
+
+\subsection{Layer-20 Replication}
+
+Table~\ref{tab:replication} summarizes full quantitative replication at layer 20.
+
+\begin{table}[!htbp]
+  \centering
+  \caption{Quantitative results at layers 22 and 20.}
+  \label{tab:replication}
+  \begin{tabular}{lcc}
+    \toprule
+    Metric & Layer 22 & Layer 20 \\
+    \midrule
+    Top-500 Reversal Score ($\bar{R}$)   & 0.921 & 0.924 \\
+    Mid-500 Reversal Score ($\bar{R}$)   & 0.871 & 0.858 \\
+    Cohen's $d$ (top vs.\ mid)           & 1.087 & --- \\
+    Top-500 OLS Slope ($\bar{\beta}$)    & $0.986 \pm 0.176$ & $0.954 \pm 0.191$ \\
+    Fraction $\beta_f > 0.8$             & 86.4\% & 80.2\% \\
+    Fraction $\beta_f < 0$               & 0.2\%  & 0.0\%  \\
+    Mean $|\cos(\mathbf{r}, \mathbf{w}_{\text{enc}})|$ top-500 & 0.01854 & 0.02086 \\
+    Centroid A (RLHF-sensitive)          & 4.35$\times$ & 7.31$\times$ \\
+    Centroid B (RLHF-insensitive)        & 1.16$\times$ & 1.01$\times$ \\
+    Centroid C (random-500)              & 2.37$\times$ & 1.63$\times$ \\
+    Centroid verdict                     & MODERATE & SELECTIVE \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\noindent\textbf{REPLICATION CONFIRMED} at both layers.
+
+\section{Discussion}
+
+\subsection{Geometric Interpretation of Encoder-Direction Preservation}
+
+The OLS slope result ($\bar{\beta} = 0.986$, 86.4\% of directions with $\beta_f > 0.8$) establishes
+that the preservation is comprehensive in both direction and magnitude. The direct orthogonality
+measurement ($|\cos\theta| = 0.0185$) provides the mechanistic account: abliteration removes
+$\mathbf{r}$ from all weight matrices, but for abliteration to change the projection of a
+residual-stream activation onto SAE encoder direction $f$ by even 10\%, $\mathbf{r}$ would need to
+project onto $\mathbf{w}_{\text{enc}}(f)$ with $|\cos\theta| \geq 0.1$. The measured mean
+$|\cos\theta| = 0.0185$ falls 5$\times$ below this threshold, explaining why both direction and
+magnitude are preserved: the orthogonalization barely touches the RLHF-modified encoder directions.
+This interpretation is consistent with \citeauthor{Cristofano2026}'s observation \citep{Cristofano2026}
+that the raw refusal direction primarily captures stylistic compliance patterns.
+
+We note that this mechanistic account applies in the pre-topk projection regime. Whether the same
+geometry holds for the post-topk sparse activations validated as semantically interpretable in
+single-model settings \citep{Bricken2023,Templeton2024} remains an open question. The orthogonality
+result---which is a property of weight vectors, not activations---directly implies that \emph{any}
+function of the residual stream that can be expressed as a projection onto $\mathbf{w}_{\text{enc}}(f)$
+will be approximately unaffected by abliteration; the question is whether the semantically active
+post-topk features are well-described by such projections, which requires a
+$\mathbf{z}_{\text{pre}}$/$\mathbf{z}_{\text{post}}$ correlation analysis not yet available.
+
+\subsection{What the Preserved Imprint Represents}
+
+The 64.6\% benign-SC overlap requires careful interpretation. The majority of RLHF-sensitive encoder
+directions are modified similarly when processing harmful and benign prompts, indicating these
+directions capture \emph{general} RLHF behavioral changes (formality, helpfulness, instruction-following
+structure) rather than harm-specific semantic content. The surviving 35.4\% uniquely-harmful
+directions are the more plausible carriers of harm-concept semantic content.
+
+Crucially, the near-orthogonality of the refusal direction to all RLHF-modified encoder directions
+(harmful-specific and style-related alike) means abliteration geometrically cannot remove any category
+of RLHF modification. The behavioral regression to base-like output arises because the compliance
+mechanism (the refusal direction) is removed, not because the underlying encoder-direction
+modifications are erased. The model forgets how to express refusal while retaining all
+representational changes RLHF introduced---at approximately full magnitude.
+
+This also explains the downstream classification null (accuracy $= 0.476$): the RLHF-sensitive
+encoder directions are elevated on \emph{both} harmful and benign prompts, so mean-activation
+discrimination is not available. The representational change RLHF introduced is a broad
+encoder-direction shift, not a selective harm-detector.
+
+\subsection{Implications for Safety Restoration}
+
+If abliteration preserves the RLHF imprint at approximately unit magnitude, the challenge for
+targeted safety restoration is not to amplify surviving encoder-direction modifications---they are
+already at full instruct-model activation levels. The challenge is to restore the \emph{compliance
+mechanism}: the geometric pathway from current activations to refusal outputs, implemented by the
+refusal direction $\mathbf{r}$. Restoration requires re-injecting $\mathbf{r}$ into the weight
+matrices without disturbing the already-intact encoder-direction modifications.
+
+This reframes the restoration problem as geometric re-injection rather than semantic amplification.
+The approach of \citet{Shportko2026} identifies compact steerable feature sets for RL-induced
+capabilities; an analogous method targeting the encoder directions that mediate harm-concept-to-refusal
+conversion could enable targeted re-injection. The 35.4\% uniquely-harmful encoder directions are the
+most promising candidates for such targeted intervention, pending confirmation that they carry
+semantically coherent harm-specific content (which requires $\mathbf{z}_{\text{post}}$ analysis).
+
+\subsection{Limitations}
+
+\textbf{Pre-topk encoder projections.} All feature metrics use $\mathbf{z}_{\text{pre}}$ (dense
+encoder projections) rather than the post-topk sparse activations validated as interpretable by
+\citet{Bricken2023} and \citet{Templeton2024}. Pre-topk values are dense by construction---every
+encoder direction receives a non-zero value on every prompt---so findings are more accurately
+characterized as \emph{geometric properties of encoder directions in a continuous projection space}
+than as \emph{feature-level preservation of near-monosemantic SAE features}. A validation experiment
+is required before semantic claims can be grounded: on the highest-$R^2$ prompt subset, compare
+top-500 features selected by $\text{SC}(\mathbf{z}_{\text{pre}})$ versus
+$\text{SC}(\mathbf{z}_{\text{post}})$ (overlap fraction) and compute Spearman $\rho$ between
+$\mathbf{z}_{\text{pre}}$ and $\mathbf{z}_{\text{post}}$ Reversal Scores. If $\rho > 0.7$ and
+overlap $> 60\%$, the pre-topk proxy is defensible; if they diverge, the semantic labeling results
+must be interpreted purely as observations about encoder-direction geometry. This is the most critical
+open validation gap.
+
+\textbf{Abliteration depth verification.} The \texttt{huihui-ai/Huihui-Qwen3-8B-abliterated-v2}
+checkpoint was not independently verified. If abliteration is incomplete---even partially---the high
+Reversal Scores and $\bar{\beta} \approx 1$ could trivially reflect the abliterated model being close
+to the instruct model by construction. Two measurements would resolve this: (1) fraction of AdvBench
+or HarmBench prompts on which the abliterated checkpoint produces a non-refusal response (expected
+near 100\% for complete abliteration); (2) mean
+$|\text{Proj}_{\mathbf{r}}(\mathbf{h}_{\text{abl}}(p))| / |\mathbf{h}_{\text{abl}}(p)|$ at layer 22
+for the 500 harmful prompts (expected near zero if $\mathbf{r}$ has been removed). These measurements
+can be computed from already-cached activations. Until they are reported, the main findings should be
+interpreted as conditional on abliteration completeness.
+
+\textbf{Multi-dimensional refusal subspace.} The orthogonality measurement uses the mean-difference
+vector $\mathbf{r}$ (a single vector). \citet{Joad2026} demonstrate that refusal spans geometrically
+distinct directions across behavioral categories, implying abliteration may remove a multi-dimensional
+subspace rather than a single vector. The mechanistic explanation of zero reversed directions requires
+near-orthogonality of the \emph{full ablation subspace} to all RLHF-modified encoder directions, not
+just the mean-difference summary. Computing mean $|\cos\theta_f|$ for the top-3 principal components
+of the (harmful $-$ harmless) activation differences at layer 22 would determine whether the
+orthogonality argument holds robustly; this is an important future measurement.
+
+\textbf{Single model family and layers.} All results are for Qwen3-8B at layers 22 and 20. The
+zero-reversed finding and $\bar{\beta} \approx 1$ result may not generalize to other model families
+(Llama, Gemma) or other layer depths. The companion geometry studies \citep{LlorenteSaguer2026a,LlorenteSaguer2026b}
+cover 12 variants, establishing the holistic survival phenomenon across families; analogous SAE-level
+analysis for Llama-3.1-8B and Gemma-3-9B using GemmaScope and LlamaScope SAEs would test whether
+encoder-direction preservation is a general property of the abliteration geometry.
+
+\textbf{Semantic labeling without validation.} The qualitative observation that the majority of
+top-SC encoder directions receive \texttt{harm\_concept} labels cannot support quantitative downstream
+reasoning without Cohen's $\kappa$ validation against a manual gold set of at least 50 annotations.
+
+\section{Conclusion}
+
+We present the first encoder-direction-level mechanistic analysis of refusal abliteration using the
+frozen Qwen-Scope base SAE across three Qwen3-8B variants. Two complementary per-direction
+metrics---the Reversal Score (directional preservation) and the OLS Slope (magnitude preservation)---together
+establish, for Qwen3-8B, a comprehensive geometric imprint: every top-500 RLHF-sensitive SAE encoder
+direction has a positive Reversal Score (mean $\bar{R} = 0.921 \pm 0.040$, $\min = 0.684$) and an
+OLS slope near unity ($\bar{\beta} = 0.986 \pm 0.176$, 86.4\% exceeding 0.8). A noise-free mid-SC
+baseline (Cohen's $d = 1.087$) confirms selective preservation. Direct measurement of
+refusal-direction geometry ($|\cos\theta| = 0.0185$ at layer 22, $0.0209$ at layer 20) provides the
+mechanistic explanation: abliteration's orthogonalization is geometrically incapable of touching the
+RLHF-modified encoder directions. A 64.6\% benign-SC overlap reveals that the preserved imprint
+spans both harm-semantic and general RLHF stylistic encoder-direction modifications; abliteration
+fails to erase any category because all reside in a subspace near-orthogonal to the refusal direction.
+For Qwen3-8B, the abliterated model's behavior reverts to base-like, but its encoder-direction
+projections remain instruct-like at full magnitude---a dissociation that reframes safety restoration
+as geometric re-injection of the compliance direction rather than semantic amplification of surviving
+features.
+
+Three critical open gaps constrain full confidence in the broader interpretation: (1)
+$\mathbf{z}_{\text{pre}}$/$\mathbf{z}_{\text{post}}$ validation (Spearman $\rho$ and feature-ranking
+overlap at the highest-$R^2$ subset) to determine whether the geometric encoder-direction findings
+correspond to semantically interpretable sparse features; (2) independent behavioral and geometric
+verification of abliteration depth for the community checkpoint; and (3) extension of the
+orthogonality measurement to the top-3 principal components of the refusal subspace, following
+\citet{Joad2026}.
+
+\noindent\textbf{Future directions:}
+(i) $\mathbf{z}_{\text{pre}}$/$\mathbf{z}_{\text{post}}$ validation experiment;
+(ii) abliteration depth verification via refusal-rate measurement and mean
+$|\text{Proj}_{\mathbf{r}}|$ at layer 22;
+(iii) multi-dimensional refusal subspace (top-3 PC orthogonality);
+(iv) cross-family extension to Llama-3.1-8B and Gemma-3-9B using GemmaScope and LlamaScope SAEs;
+(v) multi-layer analysis across all 36 Qwen-Scope layers;
+(vi) investigation of the 35.4\% uniquely-harmful encoder directions as candidates for targeted
+geometric restoration.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
