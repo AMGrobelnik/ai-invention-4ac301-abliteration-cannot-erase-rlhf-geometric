@@ -1,0 +1,15 @@
+{
+  "title": "OLS Slopes, Mid-SC Baseline, Benign Overlap Analysis",
+  "layman_summary": "Measures whether the safety training in Qwen3-8B survives abliteration by testing if the same features change in the same direction and magnitude across base, instruct, and abliterated models.",
+  "summary": "This experiment extends the iter3 SAE Reversal Score analysis with four new measurements on Qwen3-8B (base/instruct/abliterated) using cached activations from iter3 (no GPU needed).\n\n**PRIMARY FINDING — OLS no-intercept slope β_f (MAGNITUDE_PRESERVED):**\nFor the top-500 SAE features (ranked by Safety Change on harmful prompts at layer 22), the mean OLS slope β_f = 0.9861 ± 0.1763. This means abliteration preserves not just the *direction* of RLHF feature modifications (Pearson R ≈ 0.92, confirmed from iter3) but also their *magnitude* — a much stronger result. 86.4% of features have β_f > 0.8, and 45.4% have β_f > 1.0 (amplification). Only 0.2% are negative. Paper framing: 'comprehensive_latent_imprint'. Replication at L20: β_f = 0.954 ± 0.191.\n\n**SECOND FINDING — Mid-SC baseline (MID_SC_CONFIRMS_SELECTIVE_PRESERVATION):**\nFeatures at the 40th–60th percentile of Safety Change (median SC ≈ 1.12 vs top-500 min ≈ 2.79) show R_mid500 = 0.871, significantly lower than R_top500 = 0.921 (t=17.2, p<1e-300, Cohen's d=1.087). This mid-SC baseline is noise-free (SC_median >> 0.01) and confirms that the high reversal scores in top-500 are not a measurement artifact but reflect genuine selectivity.\n\n**THIRD FINDING — Benign-SC overlap (STYLE_DOMINANT):**\nOf the top-500 features by harmful-SC, 323/500 (64.6%) overlap with the top-500 by benign-SC. This STYLE_DOMINANT verdict indicates the top-500 selected features capture general RLHF style changes (tone, format) rather than harm-specific semantics. This is an important caveat for interpreting the OLS results: the features with high reversal scores likely encode stylistic RLHF modifications, not specifically harm-related knowledge removal.\n\n**FOURTH FINDING — |cos| numerical reconciliation:**\nIter4 recomputes |cos(refusal_dir, W_enc[f])| for top-500 features: L22 = 0.01854 (iter3: 0.01853 ✓), L20 = 0.02086 (iter3: 0.02086 ✓). Paper draft values (0.019, 0.021) match to 2 decimal places via rounding. The 0.0145 value in hypothesis summary reflects a different feature set from an earlier iteration. Authoritative values: L22=0.01854, L20=0.02086.\n\n**Cross-checks all pass:** R_top500=0.9205 (iter3: 0.9205), refusal_dir_norm=37.53 (iter3: 37.53), SC_top500_min=2.787 (iter3: 2.787).\n\n**Output:** 1000-row exp_gen_sol_out JSON with per-prompt OLS proxy betas, delta magnitudes, and global metrics; analysis_out.json with full structured results.",
+  "out_expected_files": {
+    "script": "method.py",
+    "full_output": "full_method_out.json",
+    "mini_output": "mini_method_out.json",
+    "preview_output": "preview_method_out.json"
+  },
+  "upload_ignore_regexes": [
+    "(^|/)logs/",
+    "(^|/)\\.venv/"
+  ]
+}

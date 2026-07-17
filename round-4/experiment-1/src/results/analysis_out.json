@@ -1,0 +1,208 @@
+{
+  "meta": {
+    "n_harmful": 500,
+    "n_benign": 500,
+    "n_features_total": 65536,
+    "sae_repo": "Qwen/SAE-Res-Qwen3-8B-Base-W64K-L0_50",
+    "activations_source": "/ai-inventor/aii_data/runs/run_hql72-TZXK98/3_invention_loop/iter_3/gen_art/gen_art_experiment_1/activations",
+    "primary_layer": 22,
+    "replication_layer": 20
+  },
+  "ols_slopes_L22": {
+    "n_valid": 500,
+    "n_excluded": 0,
+    "beta_mean": 0.9860730171203613,
+    "beta_std": 0.17627795040607452,
+    "beta_median": 0.9852802753448486,
+    "beta_min": -0.05480419471859932,
+    "beta_max": 1.7252031564712524,
+    "fraction_gt_0p8": 0.864,
+    "fraction_gt_1p0": 0.454,
+    "fraction_lt_0p2": 0.002,
+    "fraction_negative": 0.002,
+    "histogram_20bins": [
+      {
+        "lo": -0.05480419471859932,
+        "hi": 0.034196171909570694,
+        "count": 1
+      },
+      {
+        "lo": 0.034196171909570694,
+        "hi": 0.123196542263031,
+        "count": 0
+      },
+      {
+        "lo": 0.123196542263031,
+        "hi": 0.21219690144062042,
+        "count": 0
+      },
+      {
+        "lo": 0.21219690144062042,
+        "hi": 0.30119726061820984,
+        "count": 0
+      },
+      {
+        "lo": 0.30119726061820984,
+        "hi": 0.39019763469696045,
+        "count": 0
+      },
+      {
+        "lo": 0.39019763469696045,
+        "hi": 0.47919797897338867,
+        "count": 1
+      },
+      {
+        "lo": 0.47919797897338867,
+        "hi": 0.5681983828544617,
+        "count": 2
+      },
+      {
+        "lo": 0.5681983828544617,
+        "hi": 0.6571987271308899,
+        "count": 8
+      },
+      {
+        "lo": 0.6571987271308899,
+        "hi": 0.7461990714073181,
+        "count": 24
+      },
+      {
+        "lo": 0.7461990714073181,
+        "hi": 0.8351994752883911,
+        "count": 46
+      },
+      {
+        "lo": 0.8351994752883911,
+        "hi": 0.9241998195648193,
+        "count": 98
+      },
+      {
+        "lo": 0.9241998195648193,
+        "hi": 1.0132001638412476,
+        "count": 112
+      },
+      {
+        "lo": 1.0132001638412476,
+        "hi": 1.1022005081176758,
+        "count": 97
+      },
+      {
+        "lo": 1.1022005081176758,
+        "hi": 1.1912009716033936,
+        "count": 59
+      },
+      {
+        "lo": 1.1912009716033936,
+        "hi": 1.2802013158798218,
+        "count": 26
+      },
+      {
+        "lo": 1.2802013158798218,
+        "hi": 1.36920166015625,
+        "count": 17
+      },
+      {
+        "lo": 1.36920166015625,
+        "hi": 1.4582020044326782,
+        "count": 4
+      },
+      {
+        "lo": 1.4582020044326782,
+        "hi": 1.5472023487091064,
+        "count": 4
+      },
+      {
+        "lo": 1.5472023487091064,
+        "hi": 1.6362028121948242,
+        "count": 0
+      },
+      {
+        "lo": 1.6362028121948242,
+        "hi": 1.7252031564712524,
+        "count": 1
+      }
+    ],
+    "verdict": "MAGNITUDE_PRESERVED",
+    "beta_f_all_prompts_mean": 0.9825837016105652,
+    "beta_f_all_prompts_std": 0.1310419887304306
+  },
+  "ols_slopes_L20": {
+    "n_valid": 500,
+    "beta_mean": 0.9535363912582397,
+    "beta_std": 0.19067029654979706,
+    "beta_median": 0.9624854326248169,
+    "beta_min": 0.2550175189971924,
+    "beta_max": 1.5971449613571167,
+    "fraction_gt_0p8": 0.802,
+    "fraction_negative": 0.0
+  },
+  "mid_sc_baseline_L22": {
+    "p40_sc": 1.0551162958145142,
+    "p60_sc": 1.196644902229309,
+    "mid500_sc_median": 1.1158215999603271,
+    "bottom500_sc_median": 0.6594678163528442,
+    "n_mid_candidates": 13108,
+    "n_mid_selected": 500,
+    "mid500_R_mean": 0.8713821172714233,
+    "mid500_R_std": 0.04998087137937546,
+    "mid500_R_min": 0.5678152441978455,
+    "mid500_R_max": 0.9533489346504211,
+    "top500_vs_mid500_ttest_t": 17.172733306884766,
+    "top500_vs_mid500_ttest_p": 0.0,
+    "top500_vs_mid500_cohens_d": 1.0871868133544922,
+    "top500_vs_bottom500_cohens_d": 1.7507765293121338,
+    "verdict": "MID_SC_CONFIRMS_SELECTIVE_PRESERVATION",
+    "noise_concern": "MITIGATED"
+  },
+  "mid_sc_baseline_L20": {
+    "p40_sc": 0.76332026720047,
+    "p60_sc": 0.8509072661399841,
+    "mid500_R_mean": 0.858140230178833,
+    "mid500_R_std": 0.06806398183107376
+  },
+  "benign_sc_overlap_L22": {
+    "overlap_count": 323,
+    "overlap_fraction": 0.646,
+    "verdict": "STYLE_DOMINANT",
+    "interpretation": ">=20% overlap \u2192 RLHF changes in top-500 are partially style-driven"
+  },
+  "cos_reconciliation": {
+    "iter4_L22_cos_enc_top500_mean_abs": 0.01853506825864315,
+    "iter4_L20_cos_enc_top500_mean_abs": 0.02086304873228073,
+    "iter4_L22_cos_enc_bottom500_mean_abs": 0.01097654365003109,
+    "iter4_L22_cos_enc_mid500_mean_abs": 0.015500501729547977,
+    "iter4_L20_cos_enc_bottom500_mean_abs": 0.010437783785164356,
+    "iter3_reported_L22": 0.01853,
+    "iter3_reported_L20": 0.02086,
+    "paper_draft_L22": 0.019,
+    "paper_draft_L20": 0.021,
+    "hypothesis_summary_value": 0.0145,
+    "discrepancy_explanation": "iter3 L22=0.01853 \u2248 paper 0.019 (rounding); L20=0.02086 \u2248 paper 0.021 (rounding). The 0.0145 in hypothesis summary likely reflects a different top-500 set or an earlier iteration. iter4 recomputation is the authoritative value.",
+    "authoritative_cos_l22": 0.01853506825864315,
+    "authoritative_cos_l20": 0.02086304873228073,
+    "l22_refusal_dir_norm": 37.53386688232422,
+    "l20_refusal_dir_norm": 29.217803955078125
+  },
+  "null_baseline_crosscheck_L22": {
+    "top500_R_mean": 0.9205300211906433,
+    "top500_R_std": 0.03986436128616333,
+    "top500_R_min": 0.6837866902351379,
+    "top500_R_max": 0.9891624450683594,
+    "bottom500_R_mean": 0.846951961517334,
+    "bottom500_R_std": 0.044081684201955795,
+    "cohens_d_top_vs_bottom": 1.7507765293121338,
+    "ttest_top_vs_bottom_t": 27.654510498046875,
+    "ttest_top_vs_bottom_p": 0.0,
+    "iter3_top500_R_mean": 0.9205,
+    "iter3_bottom500_R_mean": 0.847,
+    "iter3_cohens_d": 1.7508
+  },
+  "null_baseline_crosscheck_L20": {
+    "top500_R_mean": 0.9244573712348938,
+    "top500_R_std": 0.04955359548330307,
+    "bottom500_R_mean": 0.8405871987342834,
+    "iter3_top500_R_mean": 0.9245
+  },
+  "primary_verdict": "MAGNITUDE_PRESERVED",
+  "paper_framing": "comprehensive_latent_imprint"
+}

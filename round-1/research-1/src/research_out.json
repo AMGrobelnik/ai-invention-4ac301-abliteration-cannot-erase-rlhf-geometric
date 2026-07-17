@@ -1,0 +1,120 @@
+{
+  "title": "Qwen3-8B SAE Architecture, Model IDs, Abliteration Procedure, and Layer Selection Reference",
+  "summary": "Qwen-Scope SAEs use TopK (NOT JumpReLU) — a critical correction to the hypothesis. All three Qwen3-8B model HF IDs confirmed. SAE covers all 36 layers with 65,536 features. The R²>=0.85 reconstruction gate will fail at deep layers; pre-topk encoder activations are the recommended fallback. Layers 14-22 recommended for cross-model comparison. Abliteration scripts, prompt datasets, and harmful prompt dataset IDs all confirmed.",
+  "answer": "This research confirms every technical component the core experiment requires and issues a critical architecture correction.\n\n**CRITICAL CORRECTION — TopK, not JumpReLU [1, 2]:** Qwen-Scope SAEs (Qwen/SAE-Res-Qwen3-8B-Base-W64K-L0_50 and L0_100) implement TopK architecture: exactly k=50 (or k=100) features are kept non-zero per forward pass via torch.topk. There is no JumpReLU threshold parameter. All hypothesis references to 'JumpReLU threshold confound' must be renamed to 'TopK gate'. Pre-topk raw encoder activations (residual @ W_enc.T + b_enc) are continuous and robust to reconstruction failure — recommended over post-topk for cross-model comparison.\n\n**Model IDs [3, 4, 5, 7]:** Base: Qwen/Qwen3-8B-Base [3]; Instruct: Qwen/Qwen3-8B [4]; Abliterated (recommended): huihui-ai/Huihui-Qwen3-8B-abliterated-v2 [7] (v2 fixes a layer-0 garbled-output bug present in v1 [5]); alternative: mlabonne/Qwen3-8B-abliterated [6]. All three share 36 transformer layers, d_model=4096, bfloat16 dtype, minimum transformers 4.51.0 [3, 4]. Layer attribute for hooks: model.model.layers. Use enable_thinking=False for instruct model safety-relevant activations [4].\n\n**Qwen-Scope SAE specifications [1, 2]:** HF repos Qwen/SAE-Res-Qwen3-8B-Base-W64K-L0_50 and L0_100; layers 0-35 (all 36); 65,536 features per layer; checkpoint filename layer{N}.sae.pt; tensors W_enc(65536,4096), W_dec(4096,65536), b_enc(65536,), b_dec(4096,); no sae_lens compatibility. The L0_100 model card explicitly endorses applying base SAEs to post-training checkpoints [2]. Feature extraction: pre_acts = residual @ W_enc.T + b_enc; topk_vals, topk_idx = pre_acts.topk(k, dim=-1); post_acts = zeros_like(pre_acts).scatter_(-1, topk_idx, topk_vals) [1, 2].\n\n**Reconstruction quality baselines [9, 10]:** arXiv:2506.07691 shows a poorly-trained instruct SAE (BT(P), analogous to a base SAE naively applied to instruct data) achieves log2(MSE)=5.20 on special tokens vs 0.65 for a properly trained instruct SAE — an ~8x gap [9]. arXiv:2605.11426 shows SAE latent cosine similarity between base and SFT-finetuned models drops to 0.509-0.557 at layer 22 while raw residual stream cosine sim stays 0.960-0.984 [10]. The R>=0.85 reconstruction gate will likely fail at deep layers — fall back to pre-topk (encoder) activations instead of decoder-reconstructed ones.\n\n**Abliteration procedure [8, 6, 12, 17]:** Sumandora/remove-refusals-with-transformers uses compute_refusal_dir.py + inference.py; harmful prompts from llm-attacks/llm-attacks (AdvBench harmful_behaviors.csv), harmless from yahma/alpaca-cleaned [8]. The mlabonne approach [6, 17] uses mlabonne/harmful_behaviors (520 samples, 256 used) + mlabonne/harmless_alpaca; evaluates layers 1 to n_layers-1; picks direction with highest mean; for 8B models layer 9 emerged as optimal. Orion-zhen/abliteration [12] supports Simple/Biprojection/Norm-Preserving/Full methods invoked via python abliterate.py config.yaml. For Qwen3-8B, model.model.layers is the correct hook attribute; model.transformer.h is only for Qwen1/1.5 [8].\n\n**Layer selection [10, 11, 18]:** LatentBiopsy (arXiv:2603.27412) found optimal layer 20 of 24 for Qwen3.5-0.8B with AUROC 0.9642, broad plateau (<0.08 variation across all layers) [11]. arXiv:2604.18901 confirms harmful intent is linearly separable across all tested layers (mean AUROC 0.982) but pooling strategy critically affects direction recovery (two strategies give directions 73 degrees apart) [18]. SFT paper (arXiv:2605.11426) identifies layer 22 as most sensitive to fine-tuning changes (SAE latent cosine sim drops to 0.509) and layer 7 as most stable [10]. Recommended candidates: Layer 14 (stable baseline), Layer 20 (primary), Layer 22 (high sensitivity); avoid layers 28-35.\n\n**Qwen3-Instruct SAE fallback [13]:** EXISTS (arXiv:2606.26620) but covers only layers 0-8 for Qwen3-8B with 65K dictionary and JumpReLU activation (L0 target 160); refusal steering demonstrated on Qwen3-4B only; HF repo ID not publicly confirmed. NOT viable as a full fallback for layers 14-22.\n\n**Harmful prompt datasets [14, 15, 16]:** WildGuardMix (allenai/wildguardmix): load_dataset('allenai/wildguardmix', 'wildguardtest'); prompt field = 'prompt'; filter prompt_harm_label == 'harmful'; 1,725 test examples [14]. BeaverTails (PKU-Alignment/BeaverTails): 33.4k test samples; filter is_safe == False; 14 harm categories [15]. HarmBench: load_dataset('swiss-ai/harmbench', 'DirectRequest', split='test') or walledai/HarmBench; 602 text behaviors; CSV field 'Behavior' [16].",
+  "sources": [
+    {
+      "index": 1,
+      "url": "https://huggingface.co/Qwen/SAE-Res-Qwen3-8B-Base-W64K-L0_50",
+      "title": "Qwen/SAE-Res-Qwen3-8B-Base-W64K-L0_50 — HuggingFace Model Card",
+      "summary": "Confirmed TopK architecture (k=50), layers 0-35, 65536 features, checkpoint format layer{N}.sae.pt, tensor shapes W_enc(65536,4096) W_dec(4096,65536) b_enc(65536,) b_dec(4096,), no sae_lens compatibility"
+    },
+    {
+      "index": 2,
+      "url": "https://huggingface.co/Qwen/SAE-Res-Qwen3-8B-Base-W64K-L0_100",
+      "title": "Qwen/SAE-Res-Qwen3-8B-Base-W64K-L0_100 — HuggingFace Model Card",
+      "summary": "Confirmed TopK (k=100), same layer coverage and tensor shapes; explicitly endorses applying base SAE to post-training checkpoints; full feature extraction code with scatter operation confirmed"
+    },
+    {
+      "index": 3,
+      "url": "https://huggingface.co/Qwen/Qwen3-8B-Base",
+      "title": "Qwen/Qwen3-8B-Base — HuggingFace Model Card",
+      "summary": "36 layers, d_model=4096, 8.2B params, BF16, min transformers 4.51.0, GQA 32/8 heads, 32768 context"
+    },
+    {
+      "index": 4,
+      "url": "https://huggingface.co/Qwen/Qwen3-8B",
+      "title": "Qwen/Qwen3-8B — HuggingFace Model Card",
+      "summary": "Instruct model; enable_thinking parameter controls thinking mode; torch_dtype=auto (BF16); min transformers 4.51.0; non-thinking mode: T=0.7, TopP=0.8"
+    },
+    {
+      "index": 5,
+      "url": "https://huggingface.co/huihui-ai/Qwen3-8B-abliterated",
+      "title": "huihui-ai/Qwen3-8B-abliterated — HuggingFace Model Card",
+      "summary": "Base=Qwen/Qwen3-8B; uses Sumandora method; 'new and faster method' mentioned for v2 but not linked; v2 recommended"
+    },
+    {
+      "index": 6,
+      "url": "https://huggingface.co/mlabonne/Qwen3-8B-abliterated",
+      "title": "mlabonne/Qwen3-8B-abliterated — HuggingFace Model Card",
+      "summary": "Custom recipe; harmful=mlabonne/harmful_behaviors (520 samples, 256 used), harmless=mlabonne/harmless_alpaca; layer selection via mean residual difference; layer 9 optimal for 8B; NousResearch/Minos-v1 evaluation"
+    },
+    {
+      "index": 7,
+      "url": "https://huggingface.co/huihui-ai/Huihui-Qwen3-8B-abliterated-v2",
+      "title": "huihui-ai/Huihui-Qwen3-8B-abliterated-v2 — HuggingFace Model Card",
+      "summary": "Recommended over v1; fixes layer-0 garbled-output bug; suitable for research/testing contexts"
+    },
+    {
+      "index": 8,
+      "url": "https://github.com/Sumandora/remove-refusals-with-transformers",
+      "title": "Sumandora/remove-refusals-with-transformers — GitHub",
+      "summary": "Scripts compute_refusal_dir.py + inference.py; harmful=AdvBench harmful_behaviors.csv, harmless=yahma/alpaca-cleaned; model.model.layers standard, model.transformer.h only for old Qwen1/1.5"
+    },
+    {
+      "index": 9,
+      "url": "https://arxiv.org/html/2506.07691v1",
+      "title": "Training Superior SAEs for Instruct Models (arXiv:2506.07691)",
+      "summary": "BT(P) log2(MSE)=5.20 special tokens vs FAST=0.65 (8x gap); no R² values; no direct base-SAE-on-instruct comparison; proxy for expected degradation when applying base SAE to instruct data"
+    },
+    {
+      "index": 10,
+      "url": "https://arxiv.org/html/2605.11426v1",
+      "title": "Mechanistic Investigation of SFT (arXiv:2605.11426)",
+      "summary": "SAE latent cosine sim drops to 0.509-0.557 at layer 22 after SFT; raw activations stay 0.96-0.98; layer 7 most stable (>0.996); layer 22 most sensitive to fine-tuning; SVD variance concentrated early, distributed deep"
+    },
+    {
+      "index": 11,
+      "url": "https://arxiv.org/html/2603.27412",
+      "title": "LatentBiopsy — Harmful Prompt Detection Geometry (arXiv:2603.27412)",
+      "summary": "Tests Qwen3.5-0.8B and Qwen2.5-0.5B (NOT Qwen3-8B); optimal layer 20/24; AUROC 0.9642; broad plateau <0.08 variation; harmful-vs-benign-aggressive = 1.000 everywhere"
+    },
+    {
+      "index": 12,
+      "url": "https://github.com/Orion-zhen/abliteration",
+      "title": "Orion-zhen/abliteration — GitHub",
+      "summary": "python abliterate.py config.yaml; Simple/Biprojection/Norm-Preserving/Full methods; tested on Llama-3.2/Qwen2.5-Coder/Ministral-8b; known NaN/Inf issue; no Qwen3-8B specific notes"
+    },
+    {
+      "index": 13,
+      "url": "https://arxiv.org/html/2606.26620v1",
+      "title": "Discovering Millions of Interpretable Features with Sparse Autoencoders (arXiv:2606.26620)",
+      "summary": "Qwen3-Instruct SAE: JumpReLU, 65K dict, L0=160; Qwen3-8B layers 0-8 ONLY; full coverage for 1.7B/4B; refusal steering on Qwen3-4B; HF repo ID unconfirmed; not viable fallback for layers 14-22"
+    },
+    {
+      "index": 14,
+      "url": "https://huggingface.co/datasets/allenai/wildguardmix",
+      "title": "allenai/wildguardmix — HuggingFace Dataset",
+      "summary": "Config wildguardtrain/wildguardtest; prompt field='prompt'; harm label='prompt_harm_label' (harmful/unharmful); test split 1,725 examples; subcategory for fine-grained harm types"
+    },
+    {
+      "index": 15,
+      "url": "https://huggingface.co/datasets/PKU-Alignment/BeaverTails",
+      "title": "PKU-Alignment/BeaverTails — HuggingFace Dataset",
+      "summary": "33.4k test samples; 14 harm categories; filter is_safe==False for harmful; load_dataset('PKU-Alignment/BeaverTails')"
+    },
+    {
+      "index": 16,
+      "url": "https://huggingface.co/datasets/walledai/HarmBench",
+      "title": "walledai/HarmBench — HuggingFace Dataset",
+      "summary": "602 text harmful behaviors; also at swiss-ai/harmbench config DirectRequest; original CSV at github.com/centerforaisafety/HarmBench field 'Behavior'"
+    },
+    {
+      "index": 17,
+      "url": "https://huggingface.co/blog/mlabonne/abliteration",
+      "title": "mlabonne Abliteration Blog Post",
+      "summary": "Layer range 1 to n_layers-1; direction selected by highest mean; applies to all residual-stream-writing components; harmful=mlabonne/harmful_behaviors (520 samples, 256 used)"
+    },
+    {
+      "index": 18,
+      "url": "https://arxiv.org/abs/2604.18901",
+      "title": "Layer-Specific Harmful Intent Geometry (arXiv:2604.18901)",
+      "summary": "Tests Qwen2.5/Qwen3.5/Llama-3.2/Gemma-3 (0.5B-9B); mean AUROC 0.982; TPR@1%FPR 0.797; pooling strategy critically affects direction (73 degree gap between strategies); broad plateau across layers"
+    }
+  ],
+  "follow_up_questions": [
+    "What is the exact HuggingFace repository ID for the Qwen3-Instruct SAE (from arXiv:2606.26620), and does it include layers beyond 0-8 for Qwen3-8B in any subsequent release?",
+    "For the cross-model Safety_change analysis using pre-topk encoder activations, what is the empirical cosine similarity between base and instruct model residual streams at layers 14, 20, and 22 for safety-relevant prompts — does the broad AUROC plateau observed for 0.8B models hold at 8B scale?",
+    "Does the 'new and faster method' used by huihui-ai v2 correspond to the Orion-zhen biprojection or norm-preserving approach, or a different technique — and does the abliteration method choice produce meaningfully different activation geometry in SAE feature space?"
+  ]
+}

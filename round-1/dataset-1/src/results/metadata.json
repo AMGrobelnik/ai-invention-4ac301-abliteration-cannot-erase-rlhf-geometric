@@ -1,0 +1,87 @@
+{
+  "total": 1000,
+  "harmful": 500,
+  "benign": 500,
+  "harmful_categories": {
+    "adversarial_behavior": 98,
+    "jailbreak_in_wild": 86,
+    "misinformation_disinformation": 14,
+    "hate_speech/offensive_language": 10,
+    "illegal": 27,
+    "Economic harm": 6,
+    "violence/aiding_and_abetting/incitement": 18,
+    "financial_crime/property_crime/theft": 13,
+    "drug_abuse/weapons/banned_substance": 16,
+    "child_abuse": 6,
+    "misinformation_regarding_ethics/laws_and_safety": 13,
+    "privacy_violation": 18,
+    "harassment_bullying": 6,
+    "Harassment/Discrimination": 8,
+    "Disinformation": 6,
+    "non_violent_unethical_behavior": 12,
+    "cybercrime_intrusion": 12,
+    "sexually_explicit/adult_content": 14,
+    "Physical harm": 7,
+    "chemical_biological": 12,
+    "Expert advice": 4,
+    "harmful": 14,
+    "Malware/Hacking": 3,
+    "controversial_topics/politics": 17,
+    "discrimination/stereotype/injustice": 15,
+    "Fraud/Deception": 7,
+    "self_harm": 8,
+    "Sexual/Adult content": 3,
+    "Privacy": 7,
+    "Government decision-making": 4,
+    "animal_abuse": 13,
+    "terrorism/organized_crime": 3
+  },
+  "harmful_sources": {
+    "advbench": 98,
+    "trustair": 86,
+    "harmbench": 85,
+    "beavertails": 176,
+    "jailbreakbench": 55
+  },
+  "benign_sources": {
+    "jailbreakbench": 46,
+    "dolly_15k": 106,
+    "toxic_chat": 104,
+    "trustair_regular": 93,
+    "jailbreak_classification": 151
+  },
+  "char_len_stats": {
+    "min": 12,
+    "mean": 272,
+    "max": 2035,
+    "p25": 57,
+    "p50": 86,
+    "p75": 217,
+    "p95": 1327
+  },
+  "schema": {
+    "fields": [
+      "id",
+      "prompt",
+      "label",
+      "category",
+      "source",
+      "char_len"
+    ],
+    "label_values": [
+      "harmful",
+      "benign"
+    ]
+  },
+  "sources": {
+    "beavertails": "PKU-Alignment/BeaverTails NeurIPS 2023, 14 harm categories",
+    "jailbreakbench": "JailbreakBench/JBB-Behaviors NeurIPS 2024, 100 harmful + 100 benign behaviors",
+    "trustair": "TrustAIRLab/in-the-wild-jailbreak-prompts ACM CCS 2024, real-world jailbreaks",
+    "harmbench": "HarmBench Center for AI Safety 2024, standard harmful behaviors",
+    "advbench": "AdvBench llm-attacks Zou et al. 2023, 520 adversarial behaviors",
+    "jailbreak_classification": "jackhhao/jailbreak-classification, 5721 benign prompts",
+    "dolly_15k": "databricks/databricks-dolly-15k, CC-BY-SA 3.0, 15K benign instructions",
+    "toxic_chat": "lmsys/toxic-chat ToxicChat 2023, real user prompts labeled toxic/non-toxic",
+    "trustair_regular": "TrustAIRLab regular (non-jailbreak) prompts as benign"
+  }
+}
